@@ -1,0 +1,530 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reducing Informational Entropy in Software Systems</title>
+<meta name="description" content="A research-grounded guide to techniques that lower informational entropy in algorithms and architectures, with measured results, theoretical limits, design rules and references.">
+<style>
+:root{
+  --bg:#faf9f6; --surface:#ffffff; --ink:#15140f; --muted:#6b675d; --line:#e4e0d6;
+  --accent:#8a6d3b; --accent-soft:#f1ead9; --code-bg:#f3f1ea; --good:#2f6b4f; --bad:#a24235;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#0e0e0c; --surface:#161613; --ink:#ece9e1; --muted:#9b978b; --line:#2a2924;
+    --accent:#c9a96a; --accent-soft:#221e14; --code-bg:#1a1915; --good:#6fbf9a; --bad:#e08a7b;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.7 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-underline-offset:3px}
+a:hover{opacity:.8}
+.wrap{max-width:760px;margin:0 auto;padding:0 24px}
+.wide{max-width:980px;margin:0 auto;padding:0 24px}
+
+/* top bar */
+.bar{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.bar .wide{display:flex;align-items:center;justify-content:space-between;height:52px;gap:16px}
+.bar b{font:600 13px var(--sans);letter-spacing:.14em;text-transform:uppercase}
+.bar nav{display:flex;gap:18px;overflow-x:auto;scrollbar-width:none}
+.bar nav a{font-size:13px;color:var(--muted);text-decoration:none;white-space:nowrap}
+.bar nav a:hover{color:var(--ink);opacity:1}
+
+/* hero */
+.hero{padding:96px 0 56px}
+.eyebrow{font:600 12px var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin:0 0 20px}
+h1{font:400 clamp(36px,6vw,58px)/1.08 var(--serif);letter-spacing:-.02em;margin:0 0 24px}
+.lead{font:400 21px/1.55 var(--serif);color:var(--muted);margin:0 0 28px}
+.meta{font-size:13px;color:var(--muted);display:flex;gap:18px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:18px}
+
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin:8px 0 8px}
+.stat{background:var(--surface);padding:24px 22px}
+.stat .n{font:400 34px/1.1 var(--serif);letter-spacing:-.01em}
+.stat .l{font-size:13px;color:var(--muted);margin-top:8px;line-height:1.45}
+
+/* sections */
+section{padding:56px 0;border-top:1px solid var(--line)}
+section:first-of-type{border-top:none}
+h2{font:400 32px/1.2 var(--serif);letter-spacing:-.01em;margin:0 0 8px}
+h2 .no{display:block;font:600 12px var(--sans);letter-spacing:.18em;color:var(--accent);margin-bottom:10px}
+h3{font:600 15px var(--sans);letter-spacing:.02em;margin:36px 0 8px}
+p{margin:0 0 16px}
+.sub{color:var(--muted);margin-bottom:28px}
+ul,ol{padding-left:22px;margin:0 0 16px}
+li{margin:6px 0}
+code{font:14px var(--mono);background:var(--code-bg);padding:2px 6px;border-radius:5px}
+pre{background:var(--code-bg);border:1px solid var(--line);border-radius:12px;padding:18px 20px;overflow-x:auto;font:13.5px/1.6 var(--mono);margin:16px 0 22px}
+pre code{background:none;padding:0;font-size:inherit}
+.cap{font-size:13px;color:var(--muted);margin:-10px 0 22px}
+.formula{font:italic 22px/1.6 var(--serif);text-align:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:22px 16px;margin:20px 0;overflow-x:auto}
+.formula small{display:block;font:13px var(--sans);font-style:normal;color:var(--muted);margin-top:6px}
+.note{border-left:2px solid var(--accent);background:var(--accent-soft);padding:14px 18px;border-radius:0 10px 10px 0;margin:22px 0;font-size:15px}
+.note b{font-weight:600}
+
+/* tables */
+.tw{overflow-x:auto;margin:18px 0 26px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14.5px;line-height:1.5}
+th{font:600 11.5px var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:14px 16px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:14px 16px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:none}
+td:first-child{font-weight:600}
+
+/* bar chart */
+.chart{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:22px 22px 14px;margin:18px 0 8px}
+.row{display:grid;grid-template-columns:190px 1fr 78px;gap:14px;align-items:center;margin:0 0 12px;font-size:14px}
+.track{height:12px;background:var(--code-bg);border-radius:6px;overflow:hidden}
+.fill{height:100%;border-radius:6px;background:var(--ink);opacity:.82}
+.fill.hot{background:var(--bad);opacity:1}
+.fill.cool{background:var(--good);opacity:1}
+.val{font:13px var(--mono);text-align:right;color:var(--muted)}
+@media (max-width:560px){.row{grid-template-columns:1fr 70px}.row .lab{grid-column:1/-1}}
+
+/* calculators */
+.calc{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px;margin:22px 0}
+.calc h4{font:600 12px var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin:0 0 14px}
+.calc label{display:block;font-size:14px;color:var(--muted);margin-bottom:8px}
+.calc input[type=range]{width:100%;accent-color:var(--accent)}
+.calc input[type=number]{font:16px var(--mono);padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);width:100%;max-width:260px}
+.out{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-top:18px}
+.out div{border-top:1px solid var(--line);padding-top:10px}
+.out span{display:block;font-size:12px;color:var(--muted)}
+.out strong{font:400 24px var(--serif)}
+
+/* rules */
+.rules{counter-reset:r;list-style:none;padding:0}
+.rules li{counter-increment:r;display:grid;grid-template-columns:44px 1fr;gap:6px;padding:18px 0;border-bottom:1px solid var(--line);margin:0}
+.rules li:before{content:counter(r,decimal-leading-zero);font:400 20px var(--serif);color:var(--accent)}
+.rules b{display:block;font-weight:600}
+.rules span{color:var(--muted);font-size:15.5px}
+
+/* team */
+.people{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;margin:22px 0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:26px}
+.card .role{font:600 11.5px var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin:0 0 8px}
+.card h3{font:400 26px/1.2 var(--serif);letter-spacing:-.01em;margin:0 0 4px}
+.card .sub2{color:var(--muted);font-size:14.5px;margin:0 0 14px}
+.card dl{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;margin:14px 0;font-size:14px}
+.card dt{color:var(--muted)}
+.card dd{margin:0;font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 16px}
+.chip{font-size:12.5px;padding:3px 10px;border:1px solid var(--line);border-radius:99px;color:var(--ink);background:var(--bg)}
+.links{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
+.btn{display:inline-block;font:600 13px var(--sans);padding:9px 16px;border:1px solid var(--ink);border-radius:99px;color:var(--ink);text-decoration:none}
+.btn:hover{background:var(--ink);color:var(--bg);opacity:1}
+.btn.solid{background:var(--ink);color:var(--bg)}
+.btn.solid:hover{opacity:.85}
+.tag{display:inline-block;font:600 11px var(--sans);letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:99px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.tag.ok{color:var(--good);border-color:color-mix(in srgb,var(--good) 40%,transparent)}
+footer{border-top:1px solid var(--line);padding:40px 0 64px;color:var(--muted);font-size:13px}
+@media print{.bar{display:none}body{background:#fff;color:#000}}
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="wide">
+    <b>Entropy &amp; Software</b>
+    <nav>
+      <a href="#framing">Framing</a>
+      <a href="#techniques">Techniques</a>
+      <a href="#examples">Examples</a>
+      <a href="#limits">Limits</a>
+      <a href="#rules">Design rules</a>
+      <a href="#team">Team</a>
+      <a href="#references">References</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<div class="wrap hero">
+  <p class="eyebrow">Technical Report</p>
+  <h1>Reducing Informational Entropy in Software Systems</h1>
+  <p class="lead">Every technique here either lowers the uncertainty a processor, cache or engineer faces, or moves it somewhere cheaper. Each comes with a bound that says when it stops paying.</p>
+  <div class="meta">
+    <span><b>Prepared by</b> Zulqarnain Ahmad · Team owner Afaq Ahmad</span>
+    <span>October 23, 2026</span>
+    <span>Information theory · algorithms · computer architecture</span>
+    <span>Includes a reproducible benchmark</span>
+  </div>
+</div>
+
+<div class="wide">
+  <div class="stats">
+    <div class="stat"><div class="n">6–8×</div><div class="l">Faster loop when the branch stream goes from random to predictable (measured)</div></div>
+    <div class="stat"><div class="n">log₂ n</div><div class="l">Bits needed to find one item among n; sorting plus search reaches this bound</div></div>
+    <div class="stat"><div class="n">≈ 20</div><div class="l">Queries after which sorting a million items pays for itself</div></div>
+    <div class="stat"><div class="n">2.87×10⁻²¹ J</div><div class="l">Landauer floor for erasing one bit at 300 K; a concept, not a design limit</div></div>
+  </div>
+</div>
+
+<!-- 1 -->
+<section id="framing"><div class="wrap">
+  <h2><span class="no">01</span>Framing: entropy as a cost model</h2>
+  <p class="sub">Three runtime costs track uncertainty, and each has a formal bound.</p>
+  <ul>
+    <li><b>Branch prediction.</b> Chen, Coffey and Mudge (1996) showed that a predictor is a compressor of the branch-outcome stream, so its misprediction rate cannot fall below the conditional entropy of the next outcome given history. For independent outcomes with taken-probability <i>p</i>, no predictor beats min(<i>p</i>, 1−<i>p</i>).</li>
+    <li><b>Caches.</b> Miss rate depends on how concentrated the address distribution is. Locality is low entropy in that distribution (working-set model, Denning 1968).</li>
+    <li><b>State space.</b> The number of reachable states, log₂|S| bits, bounds what a test suite or a reviewer must cover.</li>
+  </ul>
+  <div class="formula">H(X<sub>t</sub> | X<sub>&lt;t</sub>) = − Σ p(x, h) · log₂ p(x | h)<small>Conditional entropy of the next event given history: the floor for any predictor of that stream</small></div>
+  <p>Entropy is never removed for free. Ordering, indexing and compression convert it into one-time or amortized work, which section 04 prices.</p>
+
+  <div class="calc" id="calc-h">
+    <h4>Interactive · Branch entropy</h4>
+    <label for="p">Probability the branch is taken: <b id="p-val">0.50</b></label>
+    <input id="p" type="range" min="1" max="99" value="50">
+    <div class="out">
+      <div><span>Entropy H(p), bits per branch</span><strong id="h-out">1.000</strong></div>
+      <div><span>Best-possible misprediction rate</span><strong id="m-out">50.0%</strong></div>
+      <div><span>Mispredictions per million branches</span><strong id="mm-out">500,000</strong></div>
+    </div>
+    <p class="cap" style="margin:14px 0 0">Assumes independent outcomes. Real streams with history correlation can do better, which is exactly what sorting the data exploits.</p>
+  </div>
+</div></section>
+
+<!-- 2 -->
+<section id="techniques"><div class="wide">
+  <h2><span class="no">02</span>Techniques and what they buy</h2>
+  <p class="sub">Each row names the uncertainty removed and the guarantee or measurement behind the gain. The Eytzinger and learned-index results are empirical and data-dependent; the rest are bounds.</p>
+  <div class="tw"><table>
+    <thead><tr><th>Technique</th><th>Uncertainty removed</th><th>Gain (bound or measured)</th><th>Source</th></tr></thead>
+    <tbody>
+      <tr><td>Sum types / state machines</td><td>Unreachable states: 3 boolean flags give 8 states, a 4-variant sum type gives 4</td><td>1 bit and 2× fewer states to test; illegal states fail to compile</td><td>Harel 1987; Okasaki 1998</td></tr>
+      <tr><td>Sorted order + binary search</td><td>Each comparison yields ≤ 1 bit; locating 1 of n items needs log₂ n bits</td><td>⌈log₂(n+1)⌉ comparisons vs n for a scan</td><td>Knuth, <i>TAOCP</i> vol. 3</td></tr>
+      <tr><td>Eytzinger array layout</td><td>Same comparison count, more predictable cache and branch behavior</td><td>Usually fastest for large arrays; sorted order wins on small ones</td><td>Khuong and Morin 2017</td></tr>
+      <tr><td>Learned index</td><td>Models the key distribution (CDF) instead of assuming uniform keys</td><td>Competitive with B-trees on the datasets tested; workload-dependent</td><td>Kraska et al. 2018</td></tr>
+      <tr><td>Struct-of-arrays, sorted batches</td><td>Address-stream entropy: strided mixed-field access becomes sequential</td><td>Sorting in O((n/B)·log<sub>M/B</sub>(n/B)) block transfers, cache-oblivious</td><td>Aggarwal and Vitter 1988; Frigo et al. 1999</td></tr>
+      <tr><td>Branchless inner loop, or sorted input</td><td>Branch-outcome entropy H → 0</td><td>18.4 ms → 2.3–3.0 ms per pass (benchmark in section 03)</td><td>This report</td></tr>
+      <tr><td>Entropy coding (arithmetic, ANS)</td><td>Redundancy in a skewed symbol stream</td><td>Average length ≥ H (Shannon); Huffman within 1 bit/symbol of H</td><td>Shannon 1948; Huffman 1952; Duda 2013</td></tr>
+      <tr><td>Succinct structures</td><td>Space overhead beyond the information-theoretic minimum</td><td>n·H₀ + o(n) bits with fast queries</td><td>Jacobson 1989; Ferragina and Manzini 2000</td></tr>
+      <tr><td>Error-correcting codes, checksums</td><td>Silent failure: structured redundancy makes faults detectable</td><td>Minimum distance d detects d−1 errors, corrects ⌊(d−1)/2⌋</td><td>Hamming 1950</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Which technique for which goal</h3>
+  <div class="tw"><table>
+    <thead><tr><th>If you are optimizing</th><th>Start with</th><th>Then consider</th><th>Watch out for</th></tr></thead>
+    <tbody>
+      <tr><td>Tail latency</td><td>Predictable branches, SoA layout, sorted batches</td><td>Eytzinger layout, branchless search</td><td>Branchless code has a fixed cost even when the branch was predictable</td></tr>
+      <tr><td>Memory footprint</td><td>Entropy coding, succinct structures</td><td>Learned indexes</td><td>Decode cost can exceed the bandwidth saved</td></tr>
+      <tr><td>Correctness / testability</td><td>Sum types, state machines, immutability</td><td>Property tests over the reduced state space</td><td>Encoding every rule in types can raise code complexity</td></tr>
+      <tr><td>Write throughput</td><td>Log-structured, tolerate read-time disorder</td><td>Batching and compaction</td><td>Read amplification (RUM trade-off)</td></tr>
+      <tr><td>Reliability</td><td>Checksums at boundaries, idempotent retries</td><td>Error-correcting codes for storage and links</td><td>Redundancy costs bits by design</td></tr>
+    </tbody>
+  </table></div>
+</div></section>
+
+<!-- 3 -->
+<section id="examples"><div class="wrap">
+  <h2><span class="no">03</span>Worked examples</h2>
+  <p class="sub">Small, runnable, and tied to a number.</p>
+
+  <h3>A · Shrink the state space with a sum type</h3>
+  <p>Three flags encode 2³ = 8 states, but only 4 are meaningful (idle, loading, error, ok). The sum type encodes exactly those 4, removing log₂(8/4) = 1 bit, and makes the other 4 unrepresentable instead of untested.</p>
+<pre><code>// Before: 8 representable states, 4 meaningful
+type Bad&lt;T&gt; = { loading: boolean; error?: Error; data?: T };
+
+// After: exactly 4 states
+type Fetch&lt;T&gt; =
+  | { tag: "idle" }
+  | { tag: "loading" }
+  | { tag: "error"; err: Error }
+  | { tag: "ok"; data: T };
+
+function render&lt;T&gt;(s: Fetch&lt;T&gt;): string {
+  switch (s.tag) {
+    case "idle":    return "";
+    case "loading": return "…";
+    case "error":   return s.err.message;
+    case "ok":      return String(s.data);
+    default: { const _exhaustive: never = s; return _exhaustive; }
+  }
+}</code></pre>
+  <p class="cap">Adding a fifth variant without handling it becomes a compile error through the <code>never</code> check. Sources: Harel (statecharts) and the "make illegal states unrepresentable" idiom from the ML tradition.</p>
+
+  <h3>B · Branch entropy, measured</h3>
+  <p>The same loop does identical arithmetic on identical values. Only the order of the data changes, so only the entropy of the branch-outcome stream changes.</p>
+<pre><code>long branchy(const int *a) {            // data-dependent branch
+    long s = 0;
+    for (unsigned i = 0; i &lt; N; i++)
+        if (a[i] &gt;= 128) s += a[i];
+    return s;
+}
+long branchless(const int *a) {         // no data-dependent branch
+    long s = 0;
+    for (unsigned i = 0; i &lt; N; i++)
+        s += a[i] &amp; -(a[i] &gt;= 128);
+    return s;
+}</code></pre>
+
+  <div class="chart" role="img" aria-label="Bar chart of milliseconds per pass for four cases">
+    <div class="row"><span class="lab">Random, branchy</span><div class="track"><div class="fill hot" style="width:100%"></div></div><span class="val">18.3 ms</span></div>
+    <div class="row"><span class="lab">Random, branchless</span><div class="track"><div class="fill cool" style="width:18.2%"></div></div><span class="val">3.3 ms</span></div>
+    <div class="row"><span class="lab">Sorted, branchy</span><div class="track"><div class="fill cool" style="width:16.3%"></div></div><span class="val">3.0 ms</span></div>
+    <div class="row"><span class="lab">Sorted, branchless</span><div class="track"><div class="fill" style="width:17.3%"></div></div><span class="val">3.2 ms</span></div>
+  </div>
+  <p class="cap">Run 1 shown. Run 2: 18.6 / 3.4 / 2.3 / 3.2 ms. N = 2²² ints in 0..255, threshold 128, 100 passes each. Checksums matched across all four cases.</p>
+
+  <div class="tw"><table>
+    <thead><tr><th>Case</th><th>Run 1 (ms/pass)</th><th>Run 2 (ms/pass)</th></tr></thead>
+    <tbody>
+      <tr><td>Random, branchy</td><td>18.329</td><td>18.586</td></tr>
+      <tr><td>Random, branchless</td><td>3.337</td><td>3.395</td></tr>
+      <tr><td>Sorted, branchy</td><td>2.982</td><td>2.309</td></tr>
+      <tr><td>Sorted, branchless</td><td>3.172</td><td>3.219</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>Three readings. Predictable beats unpredictable by roughly 6–8× on the branchy loop. Branchless removes the penalty at a fixed cost, about 3.2–3.4 ms here. And once the branch is predictable, the branchy version is as fast or faster, so branchless is insurance against disorder, not a free win.</p>
+  <div class="note"><b>Compiler caveat.</b> With default flags at <code>-O1</code>, gcc already converted the branch to a conditional move: random and sorted measured 4.1 and 3.8 ms, almost no gap. The table above used <code>-fno-if-conversion -fno-if-conversion2</code> to expose the effect. Check what your compiler emitted before concluding a branch is costing you.</div>
+  <p class="cap">Environment: 2 vCPU Intel Xeon @ 2.10 GHz virtual machine, gcc 13.3.0. Absolute numbers will differ on your hardware; the ratio is the finding. Single-environment results on a shared VM carry noise.</p>
+
+  <h3>C · A binary search with no data-dependent branch</h3>
+  <p>Each step halves the interval and yields about one bit, the information-theoretic maximum for a comparison. The conditional move removes branch misprediction from the loop.</p>
+<pre><code>// First index with a[i] &gt;= x, or n if none. Requires n &gt;= 1, sorted input.
+size_t lower_bound_bl(const int *a, size_t n, int x) {
+    const int *base = a;
+    while (n &gt; 1) {
+        size_t half = n / 2;
+        base = (base[half - 1] &lt; x) ? base + half : base;  // cmov
+        n -= half;
+    }
+    return (size_t)(base - a) + (*base &lt; x);
+}</code></pre>
+  <p class="cap">Checked against a reference implementation on every array length from 1 to 200, with duplicates, at every probe value in and around range: 20,858 test cases, 0 mismatches.</p>
+
+  <h3>D · Layout changes the address-stream entropy</h3>
+<pre><code>struct P  { float x, y, z, w; };        // AoS: 16 B, 4 per 64 B line
+struct Ps { float *x, *y, *z, *w; };    // SoA: each field contiguous
+
+// Summing only x: AoS uses 25% of each fetched line, SoA uses 100%.
+// Upper bound on bandwidth-bound speedup: 4×. Measure before claiming it.</code></pre>
+  <p class="cap">The 4× figure is an arithmetic bound from line utilization, not a measurement.</p>
+</div></section>
+
+<!-- 4 -->
+<section id="limits"><div class="wrap">
+  <h2><span class="no">04</span>Limits: when ordering costs more than it removes</h2>
+  <p class="sub">Ordering is work. Below are the points where that work stops paying.</p>
+
+  <h3>Sorting lower bound</h3>
+  <p>Any comparison sort needs at least log₂(n!) ≈ n log₂ n − 1.44 n comparisons on worst-case input. You beat it only by exploiting structure already present. That is the field of adaptive sorting (Mannila 1985; Estivill-Castro and Wood 1992), and it is why Timsort is fast on nearly sorted data.</p>
+
+  <h3>Amortization break-even</h3>
+  <p>A linear scan costs n per query. Sort-then-search costs n log n + q log n. Sorting wins when q &gt; n log n / (n − log n), which is about log n queries. For a handful of lookups, do not build the index.</p>
+
+  <div class="calc" id="calc-b">
+    <h4>Interactive · Break-even</h4>
+    <label for="n">Number of items n</label>
+    <input id="n" type="number" min="2" step="1" value="1000000">
+    <div class="out">
+      <div><span>log₂ n</span><strong id="lg-out">19.9</strong></div>
+      <div><span>Queries to repay sorting</span><strong id="q-out">≈ 20</strong></div>
+      <div><span>Sort comparisons ≈ n log₂ n − 1.44 n</span><strong id="s-out">18.5 M</strong></div>
+    </div>
+    <p class="cap" style="margin:14px 0 0">Counts comparisons only. It ignores cache effects and the cost of keeping the order up to date as data changes.</p>
+  </div>
+
+  <h3>Maintenance cost</h3>
+  <p>Order must be kept, not just built. The RUM conjecture (Athanassoulis et al. 2016) argues that an access method cannot minimize read, update and memory overhead at once. Log-structured merge trees buy write throughput by tolerating disorder at read time. Dynamic lower bounds from the cell-probe model (Fredman and Saks 1989; Pătrașcu and Demaine 2006) formalize why maintaining order under updates has a price.</p>
+
+  <h3>Incompressibility</h3>
+  <p>Data with high Kolmogorov complexity cannot be cheaply ordered or compressed. Kolmogorov complexity is uncomputable, so "the best possible structure" can never be certified in general (Li and Vitányi).</p>
+
+  <h3>Thermodynamic floor</h3>
+  <p>Landauer (1961): erasing one bit dissipates at least kT ln 2, which is 2.87 × 10⁻²¹ J at 300 K. The bound has been verified experimentally (Bérut et al., <i>Nature</i> 2012). Bennett (1973) showed computation can be made logically reversible, avoiding erasure at a cost in space or time. Real hardware dissipates orders of magnitude above this floor, so in practice your limit is data movement, not bit erasure.</p>
+
+  <div class="note"><b>Takeaway.</b> Order data when queries per update comfortably exceed log n, when the data arrives already structured, or when the payoff is a predictable branch or cache stream. Do not order data that is read once, changes constantly, or is already close to incompressible.</div>
+</div></section>
+
+<!-- 5 -->
+<section id="rules"><div class="wrap">
+  <h2><span class="no">05</span>Design rules</h2>
+  <p class="sub">Six rules you can apply in a review.</p>
+  <ol class="rules">
+    <li><div><b>Encode only valid states.</b><span>Prefer sum types and explicit state machines to sets of flags. Count representable versus meaningful states; the gap is wasted bits and untested cases.</span></div></li>
+    <li><div><b>Index or sort only past the break-even.</b><span>Expect more than about log n queries per update, or a read-heavy workload, before paying to maintain order.</span></div></li>
+    <li><div><b>Make address and branch streams predictable.</b><span>Struct-of-arrays, sorted batches, and branchless inner loops where data order is outside your control.</span></div></li>
+    <li><div><b>Prefer proven bounds over hand-tuned constants.</b><span>Use cache-oblivious or I/O-optimal structures rather than hard-coding cache sizes that change with the next CPU.</span></div></li>
+    <li><div><b>Compress when bandwidth is the bottleneck.</b><span>If the CPU is the bottleneck, decode cost can erase the saving. Measure both.</span></div></li>
+    <li><div><b>Measure before and after.</b><span>Use <code>perf stat -e branch-misses,cache-misses</code>. Theory gives the direction and the bound; your hardware supplies the constant. Check the compiler's output first.</span></div></li>
+  </ol>
+
+  <h3>Review checklist</h3>
+  <ul>
+    <li>Which states can this type represent that the system never enters?</li>
+    <li>What does the branch-outcome stream look like on production data, not test data?</li>
+    <li>How many reads happen per write? Is it above log n?</li>
+    <li>What is the bottleneck: CPU, memory bandwidth, or the network?</li>
+    <li>Did the compiler already make this change for us?</li>
+  </ul>
+</div></section>
+
+<!-- 6 -->
+<section id="reproduce"><div class="wrap">
+  <h2><span class="no">06</span>Reproduce the benchmark</h2>
+  <p class="sub">The full program is below so the numbers in section 03 can be checked on your own machine.</p>
+<pre><code>// bench.c  ·  gcc -O1 -fno-if-conversion -fno-if-conversion2 -o bench bench.c
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;time.h&gt;
+#define N (1u &lt;&lt; 22)
+#define REPS 100
+
+static int cmp(const void *a, const void *b) { return *(const int *)a - *(const int *)b; }
+static double now(void) { struct timespec t; clock_gettime(CLOCK_MONOTONIC, &amp;t); return t.tv_sec + t.tv_nsec * 1e-9; }
+
+__attribute__((noinline)) long branchy(const int *a) {
+    long s = 0;
+    for (unsigned i = 0; i &lt; N; i++) if (a[i] &gt;= 128) s += a[i];
+    return s;
+}
+__attribute__((noinline)) long branchless(const int *a) {
+    long s = 0;
+    for (unsigned i = 0; i &lt; N; i++) s += a[i] &amp; -(a[i] &gt;= 128);
+    return s;
+}
+static double run(long (*f)(const int *), const int *a, long *out) {
+    double t0 = now(); long s = 0;
+    for (int r = 0; r &lt; REPS; r++) s += f(a);
+    *out = s; return (now() - t0) / REPS * 1e3;   // ms per pass
+}
+int main(void) {
+    int *a = malloc(N * sizeof *a); srand(42);
+    for (unsigned i = 0; i &lt; N; i++) a[i] = rand() % 256;
+    long s1, s2, s3, s4;
+    double t1 = run(branchy, a, &amp;s1), t2 = run(branchless, a, &amp;s2);
+    qsort(a, N, sizeof *a, cmp);
+    double t3 = run(branchy, a, &amp;s3), t4 = run(branchless, a, &amp;s4);
+    printf("checksums equal: %s\n", (s1 == s3 &amp;&amp; s2 == s4 &amp;&amp; s1 == s2) ? "yes" : "NO");
+    printf("random,  branchy   : %7.3f ms/pass\n", t1);
+    printf("random,  branchless: %7.3f ms/pass\n", t2);
+    printf("sorted,  branchy   : %7.3f ms/pass\n", t3);
+    printf("sorted,  branchless: %7.3f ms/pass\n", t4);
+    free(a); return 0;
+}</code></pre>
+</div></section>
+
+<!-- 7 -->
+<section id="team"><div class="wide">
+  <h2><span class="no">07</span>The team behind this report</h2>
+  <p class="sub">Engineering and automation delivered by a small Pakistan-based team. Figures below are as shown on each public profile on October 23, 2026, and will change over time.</p>
+
+  <div class="people">
+    <article class="card">
+      <p class="role">Author</p>
+      <h3>Zulqarnain Ahmad</h3>
+      <p class="sub2">Full-Stack Web Developer + Automation Expert</p>
+      <p>Builds business websites, web applications and automation that removes repetitive work, with an emphasis on clean, secure and scalable code and clear communication.</p>
+      <dl>
+        <dt>Location</dt><dd>Pakistan</dd>
+        <dt>Platform</dt><dd>Freelancer.com · @zulqarnaina43</dd>
+      </dl>
+      <div class="chips">
+        <span class="chip">Next.js</span><span class="chip">React</span><span class="chip">JavaScript</span><span class="chip">PHP</span><span class="chip">WordPress</span><span class="chip">API integration</span><span class="chip">Email automation</span><span class="chip">WhatsApp automation</span><span class="chip">Workflow automation</span>
+      </div>
+      <div class="links"><a class="btn solid" href="https://www.freelancer.com/u/zulqarnaina43">Freelancer profile</a></div>
+    </article>
+
+    <article class="card">
+      <p class="role">Team owner</p>
+      <h3>Afaq Ahmad</h3>
+      <p class="sub2">CEO, Honestopedia Tech Solution</p>
+      <p>Freelance developer building web and mobile apps, Python automation and UI/UX design, focused on scalable, SEO-optimized solutions and on-time delivery.</p>
+      <dl>
+        <dt>Location</dt><dd>Pakistan</dd>
+        <dt>Rate</dt><dd>$30 USD / hour</dd>
+        <dt>Rating</dt><dd>5.0 from 22 reviews</dd>
+        <dt>On time / on budget</dt><dd>100% / 100%</dd>
+        <dt>Accept rate</dt><dd>100%</dd>
+        <dt>Repeat hire rate</dt><dd>29%</dd>
+        <dt>Platform</dt><dd>Freelancer.com · @AFAQCEO</dd>
+      </dl>
+      <div class="chips">
+        <span class="chip">Web &amp; app development</span><span class="chip">Python</span><span class="chip">AI</span><span class="chip">SEO</span><span class="chip">UI/UX</span>
+      </div>
+      <p class="cap" style="margin:0 0 12px">Certifications listed on profile: Python, WordPress, ASP.NET, JavaScript.</p>
+      <div class="links"><a class="btn solid" href="https://www.freelancer.com/u/AFAQCEO">Freelancer profile</a><a class="btn" href="https://github.com/H-tech-AFAQ-CEO">GitHub</a></div>
+    </article>
+  </div>
+
+  <h3>Team GitHub · H-tech-AFAQ-CEO</h3>
+  <p>The team's public GitHub lists 779 repositories. A selection of pinned work:</p>
+  <div class="tw"><table>
+    <thead><tr><th>Project</th><th>Stack</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td>Blob-to-SharePoint ETL Migration</td><td>C# · .NET 8</td><td>Console app that migrates PDF, CSV and HTML files from Azure Blob Storage to SharePoint Online</td></tr>
+      <tr><td>Salon booking app (MVP)</td><td>TypeScript</td><td>Booking app moved to an API-driven architecture with JWT authentication and server-side payments</td></tr>
+      <tr><td>Flutter AR treasure hunt</td><td>Flutter · C++</td><td>Augmented-reality treasure hunt game built with Flutter and Google Maps</td></tr>
+      <tr><td>Web time-management tool</td><td>PHP · SQLite</td><td>Lightweight, zero-configuration time tracker with email support and no MySQL required</td></tr>
+      <tr><td>USB UVC camera as system camera</td><td>Kotlin</td><td>Android solution that makes an external USB camera the only system camera</td></tr>
+    </tbody>
+  </table></div>
+  <div class="links"><a class="btn solid" href="https://github.com/H-tech-AFAQ-CEO">View all repositories</a></div>
+</div></section>
+
+<!-- 8 -->
+<section id="references"><div class="wide">
+  <h2><span class="no">08</span>References</h2>
+  <p class="sub">Status shows what was checked against a source page while preparing this report. "From memory" entries are standard citations that were not independently re-verified here; confirm them before quoting in formal work.</p>
+  <div class="tw"><table>
+    <thead><tr><th>Work</th><th>Used for</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>Khuong and Morin, <a href="https://arxiv.org/abs/1509.05053">Array Layouts for Comparison-Based Searching</a> (arXiv 1509.05053; J. Experimental Algorithmics, 2017)</td><td>Eytzinger layout versus sorted order</td><td><span class="tag ok">Checked</span> arXiv page; journal venue from memory</td></tr>
+      <tr><td>Athanassoulis et al., <a href="https://stratos.seas.harvard.edu/publications/designing-access-methods-rum-conjecture">Designing Access Methods: The RUM Conjecture</a>, EDBT 2016</td><td>Read/update/memory trade-off</td><td><span class="tag ok">Checked</span> publication page</td></tr>
+      <tr><td>Kraska et al., <a href="https://research.google/pubs/the-case-for-learned-index-structures/">The Case for Learned Index Structures</a>, SIGMOD 2018</td><td>Learned indexes</td><td><span class="tag ok">Checked</span> publication page</td></tr>
+      <tr><td>Bérut et al., <a href="https://pubmed.ncbi.nlm.nih.gov/22398556/">Experimental verification of Landauer's principle linking information and thermodynamics</a>, Nature 483, 2012</td><td>Experimental confirmation of the Landauer bound</td><td><span class="tag ok">Checked</span> search listing</td></tr>
+      <tr><td>Chen, Coffey and Mudge, Analysis of Branch Prediction via Data Compression, ASPLOS 1996</td><td>Predictor as compressor</td><td><span class="tag">From memory</span></td></tr>
+      <tr><td>Estivill-Castro and Wood, A Survey of Adaptive Sorting Algorithms, ACM Computing Surveys 1992; Mannila, Measures of Presortedness and Optimal Sorting Algorithms, IEEE Trans. Computers 1985</td><td>Adaptive sorting</td><td><span class="tag">From memory</span></td></tr>
+      <tr><td>Shannon 1948 (A Mathematical Theory of Communication); Huffman 1952; Duda 2013 (Asymmetric Numeral Systems, arXiv)</td><td>Source coding</td><td><span class="tag">From memory</span></td></tr>
+      <tr><td>Landauer 1961 (Irreversibility and Heat Generation in the Computing Process); Bennett 1973 (Logical Reversibility of Computation); Bennett 1982 review</td><td>Thermodynamic and reversible-computing limits</td><td><span class="tag">From memory</span></td></tr>
+      <tr><td>Aggarwal and Vitter, CACM 1988; Frigo, Leiserson, Prokop and Ramachandran, FOCS 1999; Belady 1966; Denning 1968; Sleator and Tarjan 1985</td><td>I/O model, cache-oblivious algorithms, replacement policy, working set</td><td><span class="tag">From memory</span></td></tr>
+      <tr><td>Jacobson, FOCS 1989; Ferragina and Manzini, FOCS 2000; Navarro, <i>Compact Data Structures</i>, 2016</td><td>Succinct and compressed structures</td><td><span class="tag">From memory</span></td></tr>
+      <tr><td>Fredman and Saks 1989; Pătrașcu and Demaine, SICOMP 2006; O'Neil et al., The Log-Structured Merge-Tree, 1996</td><td>Dynamic lower bounds, write-optimized structures</td><td><span class="tag">From memory</span></td></tr>
+      <tr><td>Harel, Statecharts, 1987; Okasaki, <i>Purely Functional Data Structures</i>, 1998; Hamming 1950; Reed and Solomon 1960; Li and Vitányi, <i>An Introduction to Kolmogorov Complexity and Its Applications</i>; Knuth, <i>TAOCP</i> vol. 3</td><td>State modeling, persistence, coding theory, complexity</td><td><span class="tag">From memory</span></td></tr>
+    </tbody>
+  </table></div>
+</div></section>
+
+</main>
+
+<footer><div class="wrap">
+  Prepared by Zulqarnain Ahmad · Team owner Afaq Ahmad · <a href="https://github.com/H-tech-AFAQ-CEO">GitHub</a> · <a href="https://www.freelancer.com/u/AFAQCEO">Freelancer</a><br>
+  October 23, 2026. Benchmark figures were produced in a single virtual-machine environment and should be re-measured on target hardware.
+</div></footer>
+
+<script>
+(function(){
+  var fmt = function(x,d){return x.toLocaleString(undefined,{maximumFractionDigits:d,minimumFractionDigits:d})};
+  // Branch entropy
+  var p = document.getElementById('p');
+  function h(){
+    var v = p.value/100, H = -(v*Math.log2(v)+(1-v)*Math.log2(1-v)), m = Math.min(v,1-v);
+    document.getElementById('p-val').textContent = v.toFixed(2);
+    document.getElementById('h-out').textContent = fmt(H,3);
+    document.getElementById('m-out').textContent = fmt(m*100,1)+'%';
+    document.getElementById('mm-out').textContent = Math.round(m*1e6).toLocaleString();
+  }
+  p.addEventListener('input',h); h();
+  // Break-even
+  var nEl = document.getElementById('n');
+  function b(){
+    var n = Math.max(2, Math.floor(Number(nEl.value)||0)), lg = Math.log2(n);
+    var q = n*lg/(n-lg), sc = n*lg - 1.4427*n;
+    document.getElementById('lg-out').textContent = fmt(lg,1);
+    document.getElementById('q-out').textContent = '≈ ' + Math.ceil(q).toLocaleString();
+    document.getElementById('s-out').textContent = sc>=1e9 ? fmt(sc/1e9,2)+' G' : sc>=1e6 ? fmt(sc/1e6,1)+' M' : Math.round(Math.max(sc,0)).toLocaleString();
+  }
+  nEl.addEventListener('input',b); b();
+})();
+</script>
+</body>
+</html>
